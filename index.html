@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퍼스널 대시보드</title>
+    
+<!-- 🎵📰 구현 중 팝업 알림 -->
+<div id="featurePopup" class="popup" style="display: none;">
+  <div class="popup-content">
+    <p>🎵 음악 컨트롤과 📰 뉴스 피드는 현재 구현 중입니다.<br>빠른 시일 내에 업데이트될 예정입니다!</p>
+    
+    <!-- ✅ 오늘 다시 보지 않기 체크박스 -->
+    <label style="display: block; margin-top: 16px; font-size: 0.95rem;">
+      <input type="checkbox" id="dismissCheckbox">
+      오늘 하루 이 메시지 다시 보지 않기
+    </label>
+
+    <button onclick="closePopup()">확인</button>
+  </div>
+</div>
+
+<style>
+
+#breath-circle {
+  width: 100px;
+  height: 100px;
+  margin: 20px auto;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: all 4s ease;
+}
+
+#breath-text {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.breath-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+
+/* 간격 추가 */
+#dday-list {
+  margin-top: 12px;
+}
+
+.todo-input {
+  background-color: rgba(255, 255, 255, 0.15) !important; /* <-- 이 줄 추가 또는 강제 고정 */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+}
+
+  .todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dday-item {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.dday-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+
+  .popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .popup-content {
+    background: linear-gradient(#1e1e1e, #1e1e1e) padding-box,
+                linear-gradient(135deg, #ff5f6d, #ffc371, #47e6d1, #845ec2) border-box;
+    border: 4px solid transparent;
+    border-radius: 20px;
+    padding: 24px 32px;
+    color: #fff;
+    font-size: 1.05rem;
+    max-width: 90%;
+    width: 360px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+    animation: popIn 0.3s ease-out;
+    text-align: center;
+  }
+
+  .popup-content button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #ffffff;
+    color: #1e1e1e;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+
+  .popup-content button:hover {
+    background-color: #eee;
+    transform: scale(1.05);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dday-item {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.dday-item span {
+  font-size: 1rem;
+}
+
+.dday-delete {
+  background: transparent;
+  border: none;
+  color: #f87171;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+</style>
+
+
+
+<script>
+  window.addEventListener("load", () => {
+    const hideUntil = localStorage.getItem("hidePopupUntil");
+    const today = new Date().toDateString();
+
+    if (hideUntil !== today) {
+      document.getElementById("featurePopup").style.display = "flex";
+    }
+  });
+
+  function closePopup() {
+    const checkbox = document.getElementById("dismissCheckbox");
+    if (checkbox.checked) {
+      const today = new Date().toDateString();
+      localStorage.setItem("hidePopupUntil", today);
+    }
+    document.getElementById("featurePopup").style.display = "none";
+  }
+</script>
+
+    
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .widget {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .widget:hover::before {
+            opacity: 1;
+        }
+
+        .widget h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clock-widget {
+            text-align: center;
+            grid-column: span 2;
+        }
+
+        .clock-time {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .clock-date {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .weather-widget {
+            text-align: center;
+        }
+
+        .weather-temp {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .weather-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .todo-widget {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .todo-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .todo-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        .todo-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .todo-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .todo-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .todo-item.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .btn-complete {
+            background: rgba(76, 175, 80, 0.6);
+        }
+
+        .btn-delete {
+            background: rgba(244, 67, 54, 0.6);
+        }
+
+        .calculator {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .calc-display {
+            grid-column: span 4;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            text-align: right;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .calc-btn {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calc-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .calc-btn.operator {
+            background: rgba(255, 193, 7, 0.6);
+        }
+
+.calc-btn.equals {
+  background: rgba(76, 175, 80, 0.6);
+  grid-row: span 2; /* ✅ 세로 2칸 차지 */
+}
+
+
+        .notes-widget textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .notes-widget textarea:focus {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .notes-widget textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .bookmarks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .bookmark {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bookmark:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .habit-tracker {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .habit-day {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .habit-day:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .habit-day.completed {
+            background: rgba(76, 175, 80, 0.6);
+        }
+
+        .timer-widget {
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #ff6b6b;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+.expense-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: nowrap;
+}
+
+.expense-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  outline: none;
+  font-size: 1rem;
+}
+
+.expense-input input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.expense-input .btn {
+  white-space: nowrap;
+  padding: 12px 16px;
+}
+
+
+        .expense-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .expense-amount {
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .music-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .music-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .music-btn.play {
+            background: rgba(76, 175, 80, 0.6);
+        }
+
+        .quote-widget {
+            text-align: center;
+            font-style: italic;
+        }
+
+        .quote-text {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .quote-author {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .news-widget {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .news-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .news-title {
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: #4ecdc4;
+        }
+
+        .news-source {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .quick-link {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .quick-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .clock-widget {
+                grid-column: span 1;
+            }
+            
+            .clock-time {
+                font-size: 2.5rem;
+            }
+        }
+        .dashboard-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  background: repeating-linear-gradient(
+    to right,
+    #ff6b6b 0%, #feca57 20%, #48dbfb 40%, #1dd1a1 60%, #ff6b6b 80%, #feca57 100%
+  );
+  background-size: 400% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 12s linear infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 100% center;
+  }
+}
+
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 시계 위젯 -->
+        <div class="widget clock-widget">
+          <div class="dashboard-title">🚀 퍼스널 대시보드</div>
+            <div class="clock-time" id="clock-time">00:00:00</div>
+            <div class="clock-date" id="clock-date">2024년 1월 1일</div>
+        </div>
+
+        <!-- 날씨 위젯 -->
+        <div class="widget weather-widget">
+            <h2>🌤️ 날씨</h2>
+            <div class="weather-icon" id="weather-icon">🌤️</div>
+            <div class="weather-temp" id="weather-temp">로딩 중...</div>
+            <div id="weather-description">날씨 정보를 가져오는 중...</div>
+            <div class="weather-details">
+                <div>습도: <span id="humidity">--%</span></div>
+                <div>바람: <span id="wind-speed">-- km/h</span></div>
+                <div>체감온도: <span id="feels-like">--°C</span></div>
+                <div>기압: <span id="pressure">-- hPa</span></div>
+            </div>
+        </div>
+
+        <!-- 할 일 목록 -->
+        <div class="widget todo-widget">
+            <h2>📋 할 일 목록</h2>
+            <input type="text" class="todo-input" placeholder="새로운 할 일을 입력하세요..." id="todo-input">
+            <div id="todo-list"></div>
+        </div>
+
+        <!-- 계산기 -->
+        <div class="widget">
+            <h2>🔢 계산기</h2>
+            <div class="calc-display" id="calc-display">0</div>
+            <div class="calculator">
+                <button class="calc-btn" onclick="clearCalc()">C</button>
+                <button class="calc-btn" onclick="appendToCalc('/')" class="operator">÷</button>
+                <button class="calc-btn" onclick="appendToCalc('*')" class="operator">×</button>
+                <button class="calc-btn" onclick="deleteLast()">⌫</button>
+                
+                <button class="calc-btn" onclick="appendToCalc('7')">7</button>
+                <button class="calc-btn" onclick="appendToCalc('8')">8</button>
+                <button class="calc-btn" onclick="appendToCalc('9')">9</button>
+                <button class="calc-btn operator" onclick="appendToCalc('-')">-</button>
+                
+                <button class="calc-btn" onclick="appendToCalc('4')">4</button>
+                <button class="calc-btn" onclick="appendToCalc('5')">5</button>
+                <button class="calc-btn" onclick="appendToCalc('6')">6</button>
+                <button class="calc-btn operator" onclick="appendToCalc('+')">+</button>
+                
+                <button class="calc-btn" onclick="appendToCalc('1')">1</button>
+                <button class="calc-btn" onclick="appendToCalc('2')">2</button>
+                <button class="calc-btn" onclick="appendToCalc('3')">3</button>
+                <button class="calc-btn equals" onclick="calculateResult()" rowspan="2">=</button>
+                
+                <button class="calc-btn" onclick="appendToCalc('0')" style="grid-column: span 2;">0</button>
+                <button class="calc-btn" onclick="appendToCalc('.')">.</button>
+            </div>
+        </div>
+
+        <!-- 메모장 -->
+        <div class="widget notes-widget">
+            <h2>📝 메모장</h2>
+            <textarea placeholder="메모를 입력하세요..." id="notes-area"></textarea>
+        </div>
+
+        <!-- 북마크 -->
+        <div class="widget">
+            <h2>🔖 즐겨찾기</h2>
+            <div class="bookmarks">
+                <a href="https://www.google.com" class="bookmark" target="_blank">Google</a>
+                <a href="https://www.youtube.com" class="bookmark" target="_blank">YouTube</a>
+                <a href="https://www.github.com" class="bookmark" target="_blank">GitHub</a>
+                <a href="https://www.naver.com" class="bookmark" target="_blank">Naver</a>
+                <a href="https://www.netflix.com" class="bookmark" target="_blank">Netflix</a>
+                <a href="https://www.spotify.com" class="bookmark" target="_blank">Spotify</a>
+            </div>
+        </div>
+
+        <!-- 습관 트래커 -->
+        <div class="widget">
+            <h2>✅ 습관 트래커</h2>
+            <div style="margin-bottom: 15px;">💧 물 마시기 (이번 주)</div>
+            <div class="habit-tracker" id="habit-tracker">
+                <div class="habit-day" data-day="0" onclick="toggleHabit(this)">월</div>
+                <div class="habit-day" data-day="1" onclick="toggleHabit(this)">화</div>
+                <div class="habit-day" data-day="2" onclick="toggleHabit(this)">수</div>
+                <div class="habit-day" data-day="3" onclick="toggleHabit(this)">목</div>
+                <div class="habit-day" data-day="4" onclick="toggleHabit(this)">금</div>
+                <div class="habit-day" data-day="5" onclick="toggleHabit(this)">토</div>
+                <div class="habit-day" data-day="6" onclick="toggleHabit(this)">일</div>
+            </div>
+        </div>
+
+        <!-- 포모도로 타이머 -->
+        <div class="widget timer-widget">
+            <h2>🍅 포모도로 타이머</h2>
+            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="timer-progress" style="width: 0%"></div>
+            </div>
+            <div class="timer-controls">
+                <button class="btn" onclick="startTimer()">시작</button>
+                <button class="btn" onclick="pauseTimer()">일시정지</button>
+                <button class="btn" onclick="resetTimer()">리셋</button>
+            </div>
+        </div>
+
+        <!-- 🧘 호흡 위젯 -->
+<div class="widget" id="breath-widget">
+  <h2>🧘 호흡 위젯</h2>
+  <div id="breath-circle"></div>
+  <div id="breath-text">시작하려면 버튼을 누르세요</div>
+  <div class="breath-controls">
+    <button class="btn" onclick="startBreathing()">시작</button>
+    <button class="btn" onclick="pauseBreathing()">일시정지</button>
+    <button class="btn" onclick="resetBreathing()">리셋</button>
+  </div>
+</div>
+
+
+        <!-- 가계부 -->
+        <div class="widget">
+            <h2>💰 가계부</h2>
+            <div class="expense-input">
+                <input type="text" placeholder="항목" id="expense-item">
+                <input type="number" placeholder="금액" id="expense-amount">
+                <button class="btn" onclick="addExpense()">추가</button>
+            </div>
+            <div class="expense-list" id="expense-list"></div>
+            <div style="margin-top: 15px; text-align: center;">
+                <div>오늘 총 지출: <span id="total-expense" style="color: #ff6b6b; font-weight: bold;">0원</span></div>
+            </div>
+        </div>
+
+<!-- 📆 D-Day 위젯 -->
+<div class="widget" id="dday-widget">
+  <h2>📆 D-Day 위젯</h2>
+
+  <!-- 입력 폼을 먼저! -->
+  <div class="todo-form">
+    <input type="text" id="dday-title" class="todo-input" placeholder="제목을 입력하세요">
+    <input type="date" id="dday-date" class="todo-input">
+    <button class="btn" onclick="addDday()">추가</button>
+  </div>
+
+  <!-- 목록은 아래에! -->
+  <div id="dday-list" class="todo-list"></div>
+</div>
+
+
+        
+        <!-- 음악 컨트롤 -->
+        <div class="widget">
+            <h2>🎵 음악 컨트롤</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 1.2rem; margin-bottom: 10px;">현재 재생 중</div>
+                <div style="opacity: 0.8;">곡을 선택해주세요</div>
+            </div>
+            <div class="music-controls">
+                <button class="music-btn" onclick="previousTrack()">⏮️</button>
+                <button class="music-btn play" onclick="togglePlay()" id="play-btn">▶️</button>
+                <button class="music-btn" onclick="nextTrack()">⏭️</button>
+            </div>
+        </div>
+
+        <!-- 영감 명언 -->
+        <div class="widget quote-widget">
+            <h2>💭 오늘의 명언</h2>
+            <div class="quote-text" id="quote-text">
+                "성공은 실패에서 실패로 옮겨가면서도 열정을 잃지 않는 것이다."
+            </div>
+            <div class="quote-author" id="quote-author">- 윈스턴 처칠</div>
+            <button class="btn" onclick="getNewQuote()" style="margin-top: 15px;">새로운 명언</button>
+        </div>
+
+        <!-- 뉴스 피드 -->
+        <div class="widget news-widget">
+  <h2>📰 뉴스 피드</h2>
+  <div id="news-list">
+    <div class="news-item">
+      <div class="news-title">뉴스를 불러오는 중...</div>
+      <div class="news-source">잠시만 기다려주세요.</div>
+    </div>
+  </div>
+</div>
+
+
+        <!-- 빠른 링크 -->
+        <div class="widget">
+            <h2>⚡ 빠른 링크</h2>
+            <div class="quick-links">
+                <a href="https://mail.google.com" class="quick-link" target="_blank">
+                    📧<br>Gmail
+                </a>
+                <a href="https://drive.google.com" class="quick-link" target="_blank">
+                    📁<br>Drive
+                </a>
+                <a href="https://calendar.google.com" class="quick-link" target="_blank">
+                    📅<br>Calendar
+                </a>
+                <a href="https://translate.google.com" class="quick-link" target="_blank">
+                    🌐<br>Translate
+                </a>
+            </div>
+        </div>
+
+        <!-- 통계 위젯 -->
+        <div class="widget">
+            <h2>📊 오늘의 통계</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="completed-todos">0</div>
+                    <div class="stat-label">완료된 할 일</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="pomodoro-sessions">0</div>
+                    <div class="stat-label">포모도로 세션</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="habit-count">0</div>
+                    <div class="stat-label">완료된 습관</div>
+                </div>
+                <div class="stat-item">
+  <div class="stat-number" id="meditation-sessions">0</div>
+  <div class="stat-label">명상 세션</div>
+</div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+  // 전역 변수
+  const API_KEY = 'af2812ea34525a99d33a9e30014f4774';
+  let isTimerRunning = false;
+  let timerInterval;
+  let timeLeft = 25 * 60;
+  let totalTime = 25 * 60;
+  let pomodoroSessions = 0;
+  let isPlaying = false;
+
+  // 로컬 스토리지 헬퍼 함수
+  function saveToStorage(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  function getFromStorage(key, defaultValue = null) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : defaultValue;
+  }
+
+  let meditationSessions = getFromStorage("meditationSessions", 0);
+document.getElementById("meditation-sessions").textContent = meditationSessions;
+
+
+
+  // 시계 기능
+  function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false });
+    const dateStr = now.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+
+    document.getElementById('clock-time').textContent = timeStr;
+    document.getElementById('clock-date').textContent = dateStr;
+  }
+
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // 날씨 기능
+  function getWeatherIcon(weatherCode) {
+    const icons = {
+      '01d': '☀️', '01n': '🌙',
+      '02d': '⛅', '02n': '⛅',
+      '03d': '☁️', '03n': '☁️',
+      '04d': '☁️', '04n': '☁️',
+      '09d': '🌧️', '09n': '🌧️',
+      '10d': '🌦️', '10n': '🌦️',
+      '11d': '⛈️', '11n': '⛈️',
+      '13d': '❄️', '13n': '❄️',
+      '50d': '🌫️', '50n': '🌫️'
+    };
+    return icons[weatherCode] || '🌤️';
+  }
+
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          fetchWeather(lat, lon);
+        },
+        error => {
+          console.error('위치 정보 오류:', error);
+          fetchWeather(35.1595, 126.8526); // 광주
+        }
+      );
+    } else {
+      fetchWeather(35.1595, 126.8526);
+    }
+  }
+
+  function fetchWeather(lat, lon) {
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=kr`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('weather-icon').textContent = getWeatherIcon(data.weather[0].icon);
+        document.getElementById('weather-temp').textContent = `${Math.round(data.main.temp)}°C`;
+        document.getElementById('weather-description').textContent = `${data.name}, ${data.weather[0].description}`;
+        document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+        document.getElementById('wind-speed').textContent = `${Math.round(data.wind.speed * 3.6)} km/h`;
+        document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°C`;
+        document.getElementById('pressure').textContent = `${data.main.pressure} hPa`;
+      })
+      .catch(error => {
+        console.error('날씨 정보 오류:', error);
+        document.getElementById('weather-temp').textContent = '날씨 정보 없음';
+        document.getElementById('weather-description').textContent = '날씨 정보를 가져올 수 없습니다';
+      });
+  }
+
+  // 계산기 기능
+  let calcExpression = '';
+  function appendToCalc(value) {
+    calcExpression += value;
+    document.getElementById('calc-display').textContent = calcExpression;
+  }
+  function clearCalc() {
+    calcExpression = '';
+    document.getElementById('calc-display').textContent = '0';
+  }
+  function deleteLast() {
+    calcExpression = calcExpression.slice(0, -1);
+    document.getElementById('calc-display').textContent = calcExpression || '0';
+  }
+  function calculateResult() {
+    try {
+      const result = eval(calcExpression);
+      document.getElementById('calc-display').textContent = result;
+      calcExpression = result.toString();
+    } catch {
+      document.getElementById('calc-display').textContent = '오류';
+    }
+  }
+
+  // 포모도로 타이머 기능
+  function updateTimerDisplay() {
+    const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+    const seconds = String(timeLeft % 60).padStart(2, '0');
+    document.getElementById('timer-display').textContent = `${minutes}:${seconds}`;
+    document.getElementById('timer-progress').style.width = `${(1 - timeLeft / totalTime) * 100}%`;
+  }
+
+  function startTimer() {
+    if (!isTimerRunning) {
+      isTimerRunning = true;
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          pomodoroSessions++;
+          document.getElementById('pomodoro-sessions').textContent = pomodoroSessions;
+          timeLeft = totalTime;
+        }
+      }, 1000);
+    }
+  }
+
+  function pauseTimer() {
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    timeLeft = totalTime;
+    updateTimerDisplay();
+  }
+
+  updateTimerDisplay();
+
+  // 습관 트래커
+  function toggleHabit(el) {
+    el.classList.toggle('completed');
+    updateHabitCount();
+  }
+
+  function updateHabitCount() {
+    const count = document.querySelectorAll('.habit-day.completed').length;
+    document.getElementById('habit-count').textContent = count;
+  }
+
+  // 할 일 기능
+  const todoInput = document.getElementById('todo-input');
+  const todoList = document.getElementById('todo-list');
+  let todos = getFromStorage('todos', []);
+
+  function renderTodos() {
+    todoList.innerHTML = '';
+    let completedCount = 0;
+    todos.forEach((todo, index) => {
+      const div = document.createElement('div');
+      div.className = 'todo-item' + (todo.completed ? ' completed' : '');
+      div.innerHTML = `
+        <span>${todo.text}</span>
+        <div class="todo-actions">
+          <button class="btn btn-complete" onclick="toggleTodo(${index})">✔</button>
+          <button class="btn btn-delete" onclick="deleteTodo(${index})">🗑</button>
+        </div>
+      `;
+      if (todo.completed) completedCount++;
+      todoList.appendChild(div);
+    });
+    document.getElementById('completed-todos').textContent = completedCount;
+  }
+
+  function addTodo() {
+    const text = todoInput.value.trim();
+    if (text) {
+      todos.push({ text, completed: false });
+      saveToStorage('todos', todos);
+      todoInput.value = '';
+      renderTodos();
+    }
+  }
+
+  function toggleTodo(index) {
+    todos[index].completed = !todos[index].completed;
+    saveToStorage('todos', todos);
+    renderTodos();
+  }
+
+  function deleteTodo(index) {
+    todos.splice(index, 1);
+    saveToStorage('todos', todos);
+    renderTodos();
+  }
+
+  todoInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') addTodo();
+  });
+
+  renderTodos();
+
+  // 가계부
+  const expenseItem = document.getElementById('expense-item');
+  const expenseAmount = document.getElementById('expense-amount');
+  const expenseList = document.getElementById('expense-list');
+  const totalExpenseEl = document.getElementById('total-expense');
+  let expenses = getFromStorage('expenses', []);
+
+  function renderExpenses() {
+    expenseList.innerHTML = '';
+    let total = 0;
+    expenses.forEach((e, i) => {
+      const div = document.createElement('div');
+      div.className = 'expense-item';
+      div.innerHTML = `
+        <span>${e.item}</span>
+        <span class="expense-amount">${e.amount.toLocaleString()}원</span>
+      `;
+      total += e.amount;
+      expenseList.appendChild(div);
+    });
+    totalExpenseEl.textContent = `${total.toLocaleString()}원`;
+  }
+
+  function deleteExpense(index) {
+  expenses.splice(index, 1);
+  saveToStorage('expenses', expenses);
+  renderExpenses();
+}
+
+
+  renderExpenses();
+
+
+  function renderExpenses() {
+  expenseList.innerHTML = '';
+  let total = 0;
+  expenses.forEach((e, i) => {
+    const div = document.createElement('div');
+    div.className = 'expense-item';
+    div.innerHTML = `
+      <span>${e.item}</span>
+      <span class="expense-amount">${e.amount.toLocaleString()}원</span>
+      <button class="btn btn-delete" onclick="deleteExpense(${i})">🗑</button>
+    `;
+    total += e.amount;
+    expenseList.appendChild(div);
+  });
+  totalExpenseEl.textContent = `${total.toLocaleString()}원`;
+}
+
+
+
+
+  function addExpense() {
+    const item = expenseItem.value.trim();
+    const amount = parseInt(expenseAmount.value);
+    if (item && !isNaN(amount)) {
+      expenses.push({ item, amount });
+      saveToStorage('expenses', expenses);
+      expenseItem.value = '';
+      expenseAmount.value = '';
+      renderExpenses();
+    }
+  }
+
+  renderExpenses();
+
+  
+
+  // 명언
+const quotes = [
+    {"text": "성공은 준비와 기회의 만남이다.", "author": "보 크로포드"},
+    {"text": "자신을 믿는 순간 살아남을 수 있다.", "author": "마츠시타 고노스케"},
+    {"text": "실패란 넘어지는 것이 아니라, 다시 일어나지 않는 것이다.", "author": "메리 픽포드"},
+    {"text": "끊임없는 노력이 성공의 열쇠다.", "author": "콜린 파월"},
+    {"text": "가장 어두운 밤이 지나야 해가 뜬다.", "author": "헨리 워즈워스 롱펠로우"},
+    {"text": "생각이 바뀌면 행동이 바뀌고, 행동이 바뀌면 인생이 바뀐다.", "author": "노먼 빈센트 필"},
+    {"text": "불가능은 노력하지 않는 자의 변명이다.", "author": "나폴레옹"},
+    {"text": "나무를 심기에 가장 좋은 때는 20년 전이었고, 그 다음은 지금이다.", "author": "중국 속담"},
+    {"text": "실패는 성공으로 가는 한 과정일 뿐이다.", "author": "윌리엄 더럼"},
+    {"text": "기회는 기다리는 자에게 오지 않는다. 만드는 자의 것이다.", "author": "조지 버나드 쇼"},
+    {"text": "꿈꾸지 않으면 이룰 수 없다.", "author": "크리스 가드너"},
+    {"text": "한 번도 실패하지 않은 사람은 아무것도 시도하지 않은 사람이다.", "author": "알베르트 아인슈타인"},
+    {"text": "미래는 오늘 무엇을 하느냐에 달려 있다.", "author": "마하트마 간디"},
+    {"text": "자신의 한계를 규정하지 말라.", "author": "마이클 조던"},
+    {"text": "천 리 길도 한 걸음부터.", "author": "속담"},
+    {"text": "습관은 제2의 천성이다.", "author": "퀸틸리아누스"},
+    {"text": "느리더라도 멈추지 마라.", "author": "공자"},
+    {"text": "작은 승리들이 큰 자신감을 만든다.", "author": "익명"},
+    {"text": "지금 이 순간이 당신 인생의 출발점이다.", "author": "익명"},
+    {"text": "변명보다는 실천이 변화를 만든다.", "author": "익명"},
+    {"text": "꾸준함은 결국 재능을 이긴다.", "author": "익명"},
+    {"text": "꿈은 꾸는 것이 아니라 이루는 것이다.", "author": "스티브 잡스"},
+    {"text": "오늘의 노력이 내일의 나를 만든다.", "author": "익명"},
+    {"text": "높이 날기 위해선 먼저 단단히 딛고 서야 한다.", "author": "익명"},
+    {"text": "실패는 끝이 아니라 배움의 시작이다.", "author": "익명"},
+    {"text": "행복은 결과가 아니라 선택이다.", "author": "익명"},
+    {"text": "스스로를 사랑하는 것이 변화의 시작이다.", "author": "루이즈 헤이"},
+    {"text": "한계를 넘는 순간 새로운 세상이 열린다.", "author": "익명"},
+    {"text": "오늘 걷지 않으면 내일은 뛰어야 한다.", "author": "익명"},
+    {"text": "위대한 일은 위대한 태도에서 나온다.", "author": "로빈 샤르마"},
+    {"text": "모든 변화는 작은 시도에서 시작된다.", "author": "제임스 클리어"},
+    {"text": "진짜 용기는 두려움을 이겨내는 것이다.", "author": "넬슨 만델라"},
+    {"text": "습관 하나가 인생을 바꾼다.", "author": "익명"},
+    {"text": "자신에게 친절하라. 모든 변화는 거기서 시작된다.", "author": "익명"},
+    {"text": "어떤 길을 가든, 나아가는 것이 중요하다.", "author": "익명"},
+    {"text": "성공은 도착지가 아니라 여정이다.", "author": "지그 지글러"},
+    {"text": "남과 비교하지 마라. 어제의 나와 비교하라.", "author": "익명"},
+    {"text": "조금 늦어도 괜찮다. 포기하지 않는 것이 중요하다.", "author": "익명"},
+    {"text": "불안은 행동의 부족에서 온다.", "author": "데일 카네기"},
+    {"text": "작은 변화가 큰 결과를 만든다.", "author": "익명"},
+    {"text": "한 걸음이 천 걸음이 된다.", "author": "속담"},
+    {"text": "의심을 멈추고 시도하라.", "author": "익명"},
+    {"text": "성공은 준비된 자에게 찾아온다.", "author": "익명"},
+    {"text": "후회보다는 도전을 선택하라.", "author": "익명"},
+    {"text": "포기하고 싶은 순간이 가장 중요한 순간이다.", "author": "익명"},
+    {"text": "계속 움직이는 자에게 기회는 온다.", "author": "익명"},
+    {"text": "실패를 두려워하지 마라. 그것은 성장의 증거다.", "author": "익명"},
+    {"text": "매일 조금씩 전진하라.", "author": "익명"},
+    {"text": "과거는 배우고, 현재는 살고, 미래는 꿈꿔라.", "author": "알버트 아인슈타인"},
+    {"text": "무엇이 되느냐보다 어떤 사람이 되느냐가 중요하다.", "author": "존 우든"},
+    {"text": "한계는 마음속에 있다.", "author": "브루스 리"},
+    {"text": "오늘의 선택이 내일을 결정한다.", "author": "익명"},
+    {"text": "실천은 생각보다 강하다.", "author": "익명"},
+    {"text": "긍정적인 태도는 긍정적인 결과를 만든다.", "author": "익명"},
+    {"text": "성공은 작은 성취들의 합이다.", "author": "익명"},
+    {"text": "도전이 없으면 변화도 없다.", "author": "익명"},
+    {"text": "시작하지 않으면 아무 일도 일어나지 않는다.", "author": "익명"},
+    {"text": "내일보다 오늘이 중요하다.", "author": "익명"},
+    {"text": "두려움은 성장의 신호다.", "author": "익명"},
+    {"text": "반복은 실력을 만든다.", "author": "익명"},
+    {"text": "더 나은 내가 되기 위한 여정은 지금 시작된다.", "author": "익명"},
+    {"text": "집중은 성공의 핵심이다.", "author": "익명"},
+    {"text": "사소한 성공이 큰 자신감을 만든다.", "author": "익명"},
+    {"text": "생각보다 행동이 중요하다.", "author": "익명"},
+    {"text": "현재를 살아라. 그것이 가장 확실한 시간이다.", "author": "달라이 라마"},
+    {"text": "진정한 변화는 내부에서부터 시작된다.", "author": "익명"},
+    {"text": "성장에는 고통이 따르지만, 그만한 가치가 있다.", "author": "익명"},
+    {"text": "오늘의 나는 어제의 선택이다.", "author": "익명"},
+    {"text": "작은 결심이 큰 성과를 만든다.", "author": "익명"},
+    {"text": "믿음은 기적을 만든다.", "author": "익명"},
+    {"text": "모든 위대한 일은 처음엔 작게 시작한다.", "author": "익명"},
+    {"text": "실패는 성공으로 가는 디딤돌이다.", "author": "익명"},
+    {"text": "꾸준함이 열쇠다.", "author": "익명"},
+    {"text": "당신의 가능성은 무한하다.", "author": "익명"},
+    {"text": "나는 할 수 있다.", "author": "익명"},
+    {"text": "남들이 가지 않은 길을 가라.", "author": "로버트 프로스트"},
+    {"text": "긍정은 가능성을 연다.", "author": "익명"},
+    {"text": "모든 것은 선택에 달려 있다.", "author": "익명"},
+    {"text": "결단이 기회를 만든다.", "author": "익명"},
+    {"text": "성공은 운이 아닌 노력이다.", "author": "익명"},
+    {"text": "가장 강한 자는 가장 오래 견디는 자다.", "author": "톨스토이"},
+    {"text": "쉬운 길은 늘 옳은 길이 아니다.", "author": "익명"},
+    {"text": "진심은 결국 통한다.", "author": "익명"},
+    {"text": "실패해도 괜찮다. 계속 나아가라.", "author": "익명"},
+    {"text": "한 번의 시도가 백 번의 생각보다 낫다.", "author": "익명"},
+    {"text": "진짜 나를 마주하라.", "author": "익명"},
+    {"text": "도전은 두려움을 이기는 열쇠다.", "author": "익명"},
+    {"text": "매일이 새 출발이다.", "author": "익명"},
+    {"text": "고요함 속에서 해답을 찾는다.", "author": "익명"},
+    {"text": "이루어질 때까지 계속하라.", "author": "익명"},
+    {"text": "작은 시도도 큰 가치가 있다.", "author": "익명"},
+    {"text": "생각을 멈추고 움직여라.", "author": "익명"},
+    {"text": "과정을 사랑하라.", "author": "익명"},
+    {"text": "마음먹은 대로 된다.", "author": "익명"},
+    {"text": "좋은 습관이 좋은 인생을 만든다.", "author": "익명"},
+    {"text": "그 어떤 실패도 노력 앞에선 작다.", "author": "익명"},
+    {"text": "용기 있는 한 걸음이 삶을 바꾼다.", "author": "익명"}
+]
+  function getNewQuote() {
+    const q = quotes[Math.floor(Math.random() * quotes.length)];
+    document.getElementById('quote-text').textContent = `"${q.text}"`;
+    document.getElementById('quote-author').textContent = `- ${q.author}`;
+  }
+
+  // 음악 컨트롤 (더미)
+  function togglePlay() {
+    isPlaying = !isPlaying;
+    const playBtn = document.getElementById('play-btn');
+    playBtn.textContent = isPlaying ? '⏸️' : '▶️';
+  }
+
+  function previousTrack() {
+    alert('이전 곡 기능은 아직 구현되지 않았습니다.');
+  }
+
+  function nextTrack() {
+    alert('다음 곡 기능은 아직 구현되지 않았습니다.');
+  }
+
+  // 초기 실행
+  getLocation();
+
+  // 메모장 자동 저장/불러오기
+const notesArea = document.getElementById('notes-area');
+notesArea.value = getFromStorage('memo', '');
+
+notesArea.addEventListener('input', () => {
+  saveToStorage('memo', notesArea.value);
+});
+  function toggleHabit(el) {
+  el.classList.toggle('completed');
+  saveHabitState();
+  updateHabitCount();
+}
+
+function saveHabitState() {
+  const days = [...document.querySelectorAll('.habit-day')].map(d => d.classList.contains('completed'));
+  saveToStorage('habits', days);
+}
+
+function loadHabitState() {
+  const saved = getFromStorage('habits', []);
+  const days = document.querySelectorAll('.habit-day');
+  days.forEach((el, idx) => {
+    if (saved[idx]) el.classList.add('completed');
+    else el.classList.remove('completed');
+  });
+  updateHabitCount();
+}
+
+function updateHabitCount() {
+  const count = document.querySelectorAll('.habit-day.completed').length;
+  document.getElementById('habit-count').textContent = count;
+}
+
+  loadHabitState();
+  
+
+    // 다른 초기화 함수들과 함께 호출
+window.addEventListener('DOMContentLoaded', () => {
+  fetchNews();    // 뉴스 시작
+  updateClock();  // 시계
+  renderTodos();  // 할일
+  loadHabitState(); // 습관
+  renderExpenses(); // 가계부
+});
+
+document.getElementById("meditation-sessions").textContent = meditationSessions;
+
+
+function addDday() {
+  const title = document.getElementById("dday-title").value.trim();
+  const date = document.getElementById("dday-date").value;
+
+  if (!title || !date) {
+    alert("제목과 날짜를 모두 입력하세요.");
+    return;
+  }
+
+  const data = JSON.parse(localStorage.getItem("ddays") || "[]");
+  data.push({ title, date });
+  localStorage.setItem("ddays", JSON.stringify(data));
+
+  document.getElementById("dday-title").value = "";
+  document.getElementById("dday-date").value = "";
+  loadDdays();
+}
+
+  function calcDday(dateStr) {
+    const today = new Date();
+    const target = new Date(dateStr);
+    if (isNaN(target)) return "날짜 오류";
+
+    target.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.floor((target - today) / (1000 * 60 * 60 * 24));
+
+    if (diff === 0) return "D-Day";
+    if (diff > 0) return `D-${diff}`;
+    return `D+${Math.abs(diff)}`;
+  }
+
+function loadDdays() {
+  const data = JSON.parse(localStorage.getItem("ddays") || "[]");
+  const list = document.getElementById("dday-list");
+  list.innerHTML = "";
+
+  data.forEach((item, index) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "todo-item dday-item";
+
+    const text = document.createElement("span");
+    text.innerHTML = `${item.title} <strong>${calcDday(item.date)}</strong>`;
+
+    const del = document.createElement("button");
+    del.className = "btn btn-delete";
+    del.innerHTML = "🗑";
+    del.onclick = () => removeDday(index);
+
+    const btnWrapper = document.createElement("div");
+    btnWrapper.className = "dday-buttons";
+    btnWrapper.appendChild(del);
+
+    wrapper.appendChild(text);
+    wrapper.appendChild(btnWrapper);
+    list.appendChild(wrapper);
+  });
+}
+
+
+  function addDday() {
+    const title = document.getElementById("dday-title").value.trim();
+    const date = document.getElementById("dday-date").value;
+
+    if (!title || !date) {
+      alert("제목과 날짜를 모두 입력하세요.");
+      return;
+    }
+
+    const data = JSON.parse(localStorage.getItem("ddays") || "[]");
+    data.push({ title, date });
+    localStorage.setItem("ddays", JSON.stringify(data));
+    loadDdays();
+  }
+
+  function removeDday(index) {
+    const data = JSON.parse(localStorage.getItem("ddays") || "[]");
+    data.splice(index, 1);
+    localStorage.setItem("ddays", JSON.stringify(data));
+    loadDdays();
+  }
+
+  window.addEventListener("DOMContentLoaded", loadDdays);
+
+  // 뉴스 API 연동 슬라이드쇼
+const NEWS_API_KEY = '562f09b5220d439680117b67dc34c43f';
+let newsIndex = 0;
+let newsItems = [];
+
+function fetchNews() {
+  const url = `https://newsapi.org/v2/top-headlines?country=kr&pageSize=10&apiKey=${NEWS_API_KEY}`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      newsItems = data.articles.map(article => ({
+        title: article.title,
+        source: article.source.name,
+        url: article.url
+      }));
+      showNewsItem(); // 슬라이드 시작
+    })
+    .catch(err => {
+      console.error("뉴스 오류:", err);
+      const el = document.getElementById('news-list');
+      if (el) {
+        el.innerHTML = '<div class="news-item">뉴스를 불러올 수 없습니다.</div>';
+      }
+    });
+}
+
+function showNewsItem() {
+  if (!newsItems.length) return;
+
+  const newsList = document.getElementById('news-list');
+  if (!newsList) return;
+
+  const article = newsItems[newsIndex];
+  newsList.innerHTML = `
+    <div class="news-item" onclick="window.open('${article.url}', '_blank')">
+      <div class="news-title">${article.title}</div>
+      <div class="news-source">${article.source}</div>
+    </div>
+  `;
+
+  newsIndex = (newsIndex + 1) % newsItems.length;
+  setTimeout(showNewsItem, 5000); // 5초마다 교체
+}
+
+let breathPhase = 0;
+let breathTimer = null;
+let breathTime = 0;
+
+const breathPhases = ["들이마시세요", "멈추세요", "내쉬세요"];
+const breathText = document.getElementById("breath-text");
+const breathCircle = document.getElementById("breath-circle");
+
+function updateBreathing() {
+  const phaseName = breathPhases[breathPhase];
+  breathText.innerText = phaseName;
+
+  if (breathPhase === 0) {
+    // 들이마시기: 커지기 시작
+    breathCircle.style.transform = "scale(1.4)";
+  } else if (breathPhase === 1) {
+    // 멈추기: 유지
+    // transform 변경 없이 유지
+  } else {
+    // 내쉬기: 작아지기 시작
+    breathCircle.style.transform = "scale(1)";
+  }
+
+  breathPhase = (breathPhase + 1) % 3;
+}
+
+function startBreathing() {
+  if (breathTimer) return;
+  updateBreathing();
+  breathTimer = setInterval(() => {
+    updateBreathing();
+    breathTime += 4;
+    if (breathTime >= 60) resetBreathing();
+  }, 4000);
+}
+
+function pauseBreathing() {
+  clearInterval(breathTimer);
+  breathTimer = null;
+}
+
+function resetBreathing() {
+  pauseBreathing();
+  breathPhase = 0;
+  breathTime = 0;
+  breathText.innerText = "시작하려면 버튼을 누르세요";
+  breathCircle.style.transform = "scale(1)";
+
+  // ✅ 명상 세션 1회 증가
+  meditationSessions++;
+  saveToStorage("meditationSessions", meditationSessions);
+  document.getElementById("meditation-sessions").textContent = meditationSessions;
+}
+
+
+
+</script>
+
+  
