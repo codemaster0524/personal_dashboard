@@ -5,22 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>퍼스널 대시보드</title>
     
-<!-- 🎵📰 구현 중 팝업 알림 -->
-<div id="featurePopup" class="popup" style="display: none;">
-  <div class="popup-content">
-    <p>🎵 음악 컨트롤과 📰 뉴스 피드는 현재 구현 중입니다.<br>빠른 시일 내에 업데이트될 예정입니다!</p>
-    
-    <!-- ✅ 오늘 다시 보지 않기 체크박스 -->
-    <label style="display: block; margin-top: 16px; font-size: 0.95rem;">
-      <input type="checkbox" id="dismissCheckbox">
-      오늘 하루 이 메시지 다시 보지 않기
-    </label>
-
-    <button onclick="closePopup()">확인</button>
-  </div>
-</div>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' dominant-baseline='central' font-size='80'>🚀</text></svg>">
 
 <style>
+
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.calendar-day {
+  padding: 6px 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.calendar-day.header {
+  font-weight: bold;
+  color: #4ecdc4;
+  background: transparent;
+}
+
+.calendar-day.today {
+  background: #4ecdc4;
+  color: #fff;
+  font-weight: bold;
+}
+
 
 #breath-circle {
   width: 100px;
@@ -187,7 +202,6 @@
 </script>
 
     
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
     <style>
         * {
             margin: 0;
@@ -884,20 +898,25 @@
 </div>
 
 
-        
-        <!-- 음악 컨트롤 -->
-        <div class="widget">
-            <h2>🎵 음악 컨트롤</h2>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="font-size: 1.2rem; margin-bottom: 10px;">현재 재생 중</div>
-                <div style="opacity: 0.8;">곡을 선택해주세요</div>
-            </div>
-            <div class="music-controls">
-                <button class="music-btn" onclick="previousTrack()">⏮️</button>
-                <button class="music-btn play" onclick="togglePlay()" id="play-btn">▶️</button>
-                <button class="music-btn" onclick="nextTrack()">⏭️</button>
-            </div>
-        </div>
+<!-- 음악 컨트롤 -->
+<div class="widget">
+    <h2>🎵 음악 컨트롤</h2>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div id="current-track" style="font-size: 1.2rem; margin-bottom: 10px;">재생 준비됨</div>
+    </div>
+    <div class="music-controls">
+        <button class="music-btn" onclick="previousTrack()">⏮️</button>
+        <button class="music-btn play" onclick="togglePlay()" id="play-btn">▶️</button>
+        <button class="music-btn" onclick="nextTrack()">⏭️</button>
+    </div>
+    <audio id="audio-player"></audio>
+</div>
+
+        <div class="widget" id="calendar-widget">
+  <h2>📅 달력</h2>
+  <div id="calendar"></div>
+</div>
+
 
         <!-- 영감 명언 -->
         <div class="widget quote-widget">
@@ -958,14 +977,79 @@
                 </div>
                 <div class="stat-item">
   <div class="stat-number" id="meditation-sessions">0</div>
-  <div class="stat-label">명상 세션</div>
+  <div class="stat-label">호홉 세션</div>
 </div>
+
+
 
             </div>
         </div>
+
+<!-- ♻️ 오늘 데이터 리셋 -->
+<div class="widget">
+  <h2>♻️ 오늘 데이터 리셋</h2>
+  
+  <input type="text" id="reset-confirm" class="todo-input" placeholder="RESET을 입력하세요" />
+  
+  <button class="btn" onclick="resetToday()">모든 위젯 초기화</button>
+  
+  <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.8;">
+    ※ 정확히 <strong>RESET</strong> 입력 시에만 초기화됩니다.<br>
+    할 일, 습관, 명상, 포모도로, 가계부 등 오늘 기록 삭제
+  </div>
+</div>
+
+        
     </div>
 
+
+    
 <script>
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tracks = Array.from({ length: 17 }, (_, i) => `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${i + 1}.mp3`);
+  let currentTrackIndex = 0;
+  let isPlaying = false;
+  const audio = document.getElementById("audio-player");
+  const playBtn = document.getElementById("play-btn");
+  const trackTitle = document.getElementById("current-track");
+
+  audio.src = tracks[currentTrackIndex];
+  trackTitle.textContent = `🎵 SoundHelix-Song-${currentTrackIndex + 1}`;
+
+  audio.addEventListener("ended", () => {
+    nextTrack();
+  });
+
+  window.togglePlay = function () {
+    if (isPlaying) {
+      audio.pause();
+      playBtn.textContent = "▶️";
+    } else {
+      audio.play();
+      playBtn.textContent = "⏸️";
+    }
+    isPlaying = !isPlaying;
+  };
+
+  window.nextTrack = function () {
+    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+    loadTrack();
+  };
+
+  window.previousTrack = function () {
+    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    loadTrack();
+  };
+
+  function loadTrack() {
+    audio.src = tracks[currentTrackIndex];
+    trackTitle.textContent = `🎵 SoundHelix-Song-${currentTrackIndex + 1}`;
+    if (isPlaying) audio.play();
+    playBtn.textContent = isPlaying ? "⏸️" : "▶️";
+  }
+});
+
   // 전역 변수
   const API_KEY = 'af2812ea34525a99d33a9e30014f4774';
   let isTimerRunning = false;
@@ -1521,20 +1605,14 @@ let newsIndex = 0;
 let newsItems = [];
 
 function fetchNews() {
-  const url = `https://newsapi.org/v2/top-headlines?country=kr&pageSize=10&apiKey=${NEWS_API_KEY}`;
-
-  fetch(url)
+  fetch('https://raw.githubusercontent.com/codemaster0524/news/main/news.json')
     .then(res => res.json())
     .then(data => {
-      newsItems = data.articles.map(article => ({
-        title: article.title,
-        source: article.source.name,
-        url: article.url
-      }));
-      showNewsItem(); // 슬라이드 시작
+      newsItems = data;
+      showNewsItem();
     })
     .catch(err => {
-      console.error("뉴스 오류:", err);
+      console.error("뉴스 로딩 오류:", err);
       const el = document.getElementById('news-list');
       if (el) {
         el.innerHTML = '<div class="news-item">뉴스를 불러올 수 없습니다.</div>';
@@ -1550,14 +1628,14 @@ function showNewsItem() {
 
   const article = newsItems[newsIndex];
   newsList.innerHTML = `
-    <div class="news-item" onclick="window.open('${article.url}', '_blank')">
+    <div class="news-item">
       <div class="news-title">${article.title}</div>
       <div class="news-source">${article.source}</div>
     </div>
   `;
 
   newsIndex = (newsIndex + 1) % newsItems.length;
-  setTimeout(showNewsItem, 5000); // 5초마다 교체
+  setTimeout(showNewsItem, 5000); // 5초마다 다음 뉴스
 }
 
 let breathPhase = 0;
@@ -1614,6 +1692,75 @@ function resetBreathing() {
   document.getElementById("meditation-sessions").textContent = meditationSessions;
 }
 
+function generateCalendar() {
+  const calendarEl = document.getElementById("calendar");
+  if (!calendarEl) return;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+
+  const firstDay = new Date(year, month, 1).getDay(); // 시작 요일
+  const lastDate = new Date(year, month + 1, 0).getDate(); // 마지막 일자
+  const today = now.getDate();
+
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+
+  calendarEl.innerHTML = "";
+
+  // 요일 헤더
+  dayNames.forEach(d => {
+    const el = document.createElement("div");
+    el.className = "calendar-day header";
+    el.textContent = d;
+    calendarEl.appendChild(el);
+  });
+
+  // 빈 칸
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement("div");
+    calendarEl.appendChild(empty);
+  }
+
+  // 날짜 채우기
+  for (let d = 1; d <= lastDate; d++) {
+    const dayEl = document.createElement("div");
+    dayEl.className = "calendar-day";
+    if (d === today) dayEl.classList.add("today");
+    dayEl.textContent = d;
+    calendarEl.appendChild(dayEl);
+  }
+}
+
+  generateCalendar();
+
+function resetToday() {
+  const input = document.getElementById("reset-confirm").value.trim();
+
+  if (input === "RESET") {
+    // ✅ 모든 데이터 삭제
+    localStorage.removeItem("todos");
+    localStorage.removeItem("habits");
+    localStorage.removeItem("meditationSessions");
+    localStorage.removeItem("expenses");
+    pomodoroSessions = 0;
+
+    // ✅ UI 갱신
+    renderTodos?.();
+    loadHabitState?.();
+    renderExpenses?.();
+    document.getElementById("completed-todos").textContent = "0";
+    document.getElementById("habit-count").textContent = "0";
+    document.getElementById("meditation-sessions").textContent = "0";
+    document.getElementById("pomodoro-sessions").textContent = "0";
+
+    // ✅ 입력칸 초기화 + 알림
+    document.getElementById("reset-confirm").value = "";
+    showCustomAlert("✅ 오늘 데이터가 초기화되었습니다!");
+  } else {
+    showCustomAlert("❌ RESET을 정확히 입력해야 합니다.");
+  }
+}
 
 
 </script>
